@@ -10,10 +10,10 @@ export default async function handler(req, res) {
 
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(200).json({
-      nama: user.uniqueid,
+      nama: user.uniqueId,
       nick: user.nickname,
-      followers: user.followerCount,
-      likes: user.heartCount,
+      followers: stats.followerCount,
+      likes: stats.heartCount,
       avatar: user.avatarThumb // Link foto profil
     });
 
