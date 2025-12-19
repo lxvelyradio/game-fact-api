@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
   // --- GANTI KODE INI ---
-  const zepetoCode = "Y8DTVN"; // Contoh: "D7K8L1"
+  const zepetoCode = "dealmaker"; // Contoh: "D7K8L1"
   // ----------------------
 
   try {
