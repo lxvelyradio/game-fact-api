@@ -10,11 +10,11 @@ export default async function handler(req, res) {
 
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(200).json({
-      nama: user.unique_id,
+      nama: user.uniqueid,
       nick: user.nickname,
-      followers: user.follower_count,
-      likes: user.total_favorited,
-      avatar: user.avatar // Link foto profil
+      followers: user.followerCount,
+      likes: user.heartCount,
+      avatar: user.avatarLarger // Link foto profil
     });
 
   } catch (error) {
