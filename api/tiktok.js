@@ -14,7 +14,7 @@ export default async function handler(req, res) {
       nick: user.nickname,
       followers: user.followerCount,
       likes: user.heartCount,
-      avatar: user.avatarLarger // Link foto profil
+      avatar: user.avatarThumb // Link foto profil
     });
 
   } catch (error) {
