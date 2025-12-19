@@ -1,39 +1,74 @@
 export default async function handler(req, res) {
-  // --- GANTI KODE INI ---
-  const zepetoCode = "dealmaker"; // Contoh: "D7K8L1"
-  // ----------------------
+  // --- MASUKKAN KODE ZEPETO (HARUS HURUF BESAR) ---
+  const zepetoCode = "Y8DTVN"; 
+  // -----------------------------------------------
 
   try {
-    // 1. Tembak ke Website Profil Zepeto
+    // 1. Gunakan URL Share Profile yang standar
     const url = `https://web.zepeto.me/share/user/profile/${zepetoCode}`;
-    
+
+    // 2. Request dengan Header menyamar sebagai Android
     const response = await fetch(url, {
       headers: {
-        // Kita harus pura-pura jadi Browser biar gak diblokir
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5"
       }
     });
 
     if (!response.ok) {
-      throw new Error("Gagal akses profil Zepeto");
+      throw new Error(`Gagal akses: ${response.status} ${response.statusText}`);
     }
 
     const html = await response.text();
 
-    // 2. Cari data tersembunyi (Zepeto pakai Next.js, datanya ada di script JSON)
-    // Kita cari teks di antara tag <script id="__NEXT_DATA__" ...>
-    const regex = /<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/;
+    // 3. Regex yang LEBIH KUAT (Menangani atribut tambahan di tag script)
+    // Mencari tag script __NEXT_DATA__ meskipun ada tulisan lain di dalamnya
+    const regex = /<script id="__NEXT_DATA__" type="application\/json"[^>]*>(.*?)<\/script>/;
     const match = html.match(regex);
 
+    // --- DEBUGGING BLOCK ---
+    // Kalau data tidak ketemu, kita cek judul halamannya apa
     if (!match || !match[1]) {
-      throw new Error("Data profil tidak ditemukan di HTML");
+      const titleMatch = html.match(/<title>(.*?)<\/title>/);
+      const pageTitle = titleMatch ? titleMatch[1] : "Tidak ada judul";
+      
+      throw new Error(`Script data tidak ditemukan. Judul Halaman: "${pageTitle}". Kemungkinan diblokir Cloudflare atau ID salah.`);
     }
+    // -----------------------
 
-    // 3. Parsing JSON yang ditemukan
+    // 4. Parsing JSON
     const rawData = JSON.parse(match[1]);
     
-    // Navigasi masuk ke dalam struktur data Zepeto (ini hasil bongkar struktur web mereka)
-    // Jalurnya biasanya: props -> pageProps -> profile
+    // 5. Navigasi Data (Struktur ini harus sesuai dengan web Zepeto saat ini)
+    // Biasanya ada di props -> pageProps -> profile -> userProfile
+    const profileData = rawData?.props?.pageProps?.profile;
+    const userProfile = profileData?.userProfile;
+
+    if (!userProfile) {
+        throw new Error("Struktur JSON Zepeto berubah, data userProfile kosong.");
+    }
+
+    const hasil = {
+      nama: profileData.name || "User",
+      zepetoId: profileData.code,
+      followers: userProfile.followerCount || 0,
+      following: userProfile.followingCount || 0,
+      avatar: profileData.profilePic || ""
+    };
+
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate'); 
+    res.status(200).json(hasil);
+
+  } catch (error) {
+    res.status(500).json({
+      error: "Gagal mengambil data",
+      detail: error.message,
+      tips: "Pastikan ID Zepeto benar (Case Sensitive/Huruf Besar) dan Vercel tidak sedang diblokir sementara."
+    });
+  }
+}
     const profileData = rawData.props.pageProps.profile;
     const stats = rawData.props.pageProps.profile.userProfile;
 
