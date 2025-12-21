@@ -1,5 +1,4 @@
 import axios from "axios";
-import * as cheerio from "cheerio";
 
 export default async function handler(req, res) {
   const { username } = req.query;
@@ -11,49 +10,25 @@ export default async function handler(req, res) {
   try {
     const profileUrl = `https://www.imvu.com/next/profile/${username}/`;
 
-    const response = await axios.get(profileUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0"
-      }
+    const { data: html } = await axios.get(profileUrl, {
+      headers: { "User-Agent": "Mozilla/5.0" }
     });
 
-    const html = response.data;
-    const $ = cheerio.load(html);
-
-    // Avatar (OpenGraph fallback paling aman)
-    const avatar =
-      $('meta[property="og:image"]').attr("content") || null;
-
-    // Username (OG title atau heading)
-    const displayName =
-      $('meta[property="og:title"]').attr("content") ||
-      username;
-
-    // Gender & Country (kalau ada)
-    let gender = null;
-    let country = null;
-
-    $("li").each((_, el) => {
-      const text = $(el).text().toLowerCase();
-      if (text.includes("gender")) {
-        gender = $(el).find("span").last().text().trim();
-      }
-      if (text.includes("country")) {
-        country = $(el).find("span").last().text().trim();
-      }
-    });
+    const ogImage = html.match(
+      /property="og:image" content="([^"]+)"/
+    );
+    const ogTitle = html.match(
+      /property="og:title" content="([^"]+)"/
+    );
 
     res.status(200).json({
-      username: displayName,
-      avatar,
-      gender,
-      country,
+      username: ogTitle ? ogTitle[1] : username,
+      avatar: ogImage ? ogImage[1] : null,
       profileUrl
     });
   } catch (err) {
     res.status(500).json({
-      error: "IMVU profile fetch failed",
-      message: err.message
+      error: "IMVU profile fetch failed"
     });
   }
 }
