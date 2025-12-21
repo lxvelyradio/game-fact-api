@@ -1,7 +1,6 @@
 import axios from "axios";
 
 const FRIENDS = [
-  "WheresTheFunYoshida",
   "username026010",
   "LocaBelle",
   "Yorbaeinsummer",
