@@ -2,7 +2,7 @@ import axios from "axios";
 
 const OWNER = "WheresTheFunYoshida";
 
-const ALL_FRIENDS = [
+const FRIENDS = [
   "username026010",
   "LocaBelle",
   "Yorbaeinsummer",
@@ -17,27 +17,36 @@ const ALL_FRIENDS = [
   "HXODST",
   "chomfrr",
   "RaphaelllllX",
-];
-
-const FRIEND_LIMIT = 8;
-const FRIENDS = ALL_FRIENDS.slice(0, FRIEND_LIMIT);
+].slice(0, 8);
 
 async function fetchProfile(username) {
-  const res = await axios.get(
-    `https://game-fact-api.vercel.app/api/roblox/profile?username=${username}`
-  );
-  return res.data;
+  try {
+    const res = await axios.get(
+      `https://game-fact-api.vercel.app/api/roblox/profile?username=${username}`,
+      { timeout: 8000 }
+    );
+    return res.data;
+  } catch (err) {
+    console.warn(`Failed to fetch ${username}`);
+    return null; // 👈 penting
+  }
 }
 
 export default async function handler(req, res) {
   try {
     const owner = await fetchProfile(OWNER);
-    const friends = await Promise.all(
+
+    const friendsRaw = await Promise.all(
       FRIENDS.map(fetchProfile)
     );
 
+    const friends = friendsRaw.filter(Boolean); // buang yg gagal
+
     res.status(200).json({ owner, friends });
   } catch (err) {
-    res.status(500).json({ error: "Roblox roster fetch failed" });
+    res.status(500).json({
+      error: "Roblox roster fetch failed",
+      detail: err.message,
+    });
   }
 }
